@@ -11,7 +11,7 @@
     "test": "playwright test"
   },
   "dependencies": {
-    "@testing-library/jest-dom": "^6.4.5",
+    "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^15.0.7",
     "@testing-library/user-event": "^14.5.2",
     "flexsearch": "^0.7.43",
