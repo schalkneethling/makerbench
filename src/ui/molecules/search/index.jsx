@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import { Suggestions } from "../suggestions";
 
 import "./index.css";
@@ -41,4 +42,11 @@ export const Search = ({
       </form>
     </>
   );
+};
+
+Search.propTypes = {
+  handleChange: PropTypes.func.isRequired,
+  onSubmitCallback: PropTypes.func.isRequired,
+  searchString: PropTypes.string.isRequired,
+  tools: PropTypes.array
 };
