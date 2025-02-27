@@ -1,5 +1,5 @@
-import * as React from "react";
 import "./index.css";
+import PropTypes from "prop-types";
 
 export function SuggestToolButton({ onClick }) {
   return (
@@ -13,3 +13,7 @@ export function SuggestToolButton({ onClick }) {
     </button>
   );
 }
+
+SuggestToolButton.propTypes = {
+  onClick: PropTypes.func.isRequired
+};

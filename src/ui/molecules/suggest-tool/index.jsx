@@ -1,4 +1,5 @@
 import * as React from "react";
+import PropTypes from "prop-types";
 import "./index.css";
 
 export function SuggestToolDialog({ isOpen, onClose }) {
@@ -338,3 +339,8 @@ export function SuggestToolDialog({ isOpen, onClose }) {
     </dialog>
   );
 }
+
+SuggestToolDialog.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired
+};

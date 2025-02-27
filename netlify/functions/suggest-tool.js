@@ -8,7 +8,7 @@ import path from 'path';
 const REPO_OWNER = 'schalkneethling';
 const REPO_NAME = 'makerbench';
 
-export async function handler(event, context) {
+export async function handler(event) {
   // Only allow POST requests
   if (event.httpMethod !== 'POST') {
     return {
