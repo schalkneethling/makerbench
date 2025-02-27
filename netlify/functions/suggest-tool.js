@@ -1,8 +1,8 @@
 // Netlify serverless function to handle tool suggestion submissions
 import { Octokit } from '@octokit/rest';
-import formidable from 'formidable';
 import fs from 'fs';
 import path from 'path';
+import { Buffer } from 'buffer';
 
 // GitHub repo info
 const REPO_OWNER = 'schalkneethling';
@@ -18,8 +18,13 @@ export async function handler(event) {
   }
 
   try {
+    console.log('Processing incoming request with headers:', JSON.stringify(event.headers));
+    console.log('Content type:', event.headers['content-type'] || event.headers['Content-Type']);
+    
     // Parse form data
+    console.log('About to parse multipart form data');
     const formData = await parseMultipartForm(event);
+    console.log('Form data parsed successfully:', JSON.stringify(formData, null, 2));
     const { title, url, description, tag, repo, logo } = formData;
     
     // Validate required fields
@@ -168,61 +173,124 @@ export async function handler(event) {
     };
   } catch (error) {
     console.error('Error processing tool suggestion:', error);
+    console.error('Error stack:', error.stack);
+    
+    // Provide more debugging info in development
+    let errorDetails = {
+      message: 'Error processing tool suggestion',
+      error: error.message
+    };
+    
+    // Add more details for debugging but be careful not to expose sensitive info
+    if (process.env.NODE_ENV !== 'production') {
+      errorDetails.stack = error.stack;
+      errorDetails.eventHeaders = event.headers;
+      errorDetails.eventHttpMethod = event.httpMethod;
+    }
     
     return {
       statusCode: 500,
-      body: JSON.stringify({
-        message: 'Error processing tool suggestion',
-        error: error.message,
-      }),
+      body: JSON.stringify(errorDetails),
     };
   }
 }
 
-// Parse multipart form data using formidable
+// Parse multipart form data without using formidable
 async function parseMultipartForm(event) {
-  // Configure formidable for parsing the multipart form
-  const form = formidable({
-    maxFileSize: 1024 * 1024, // 1MB file size limit
-    filter: (part) => {
-      // Filter files by allowed MIME types
-      if (part.mimetype) {
-        const allowedTypes = ['image/png', 'image/svg+xml', 'image/webp', 'image/avif'];
-        return allowedTypes.includes(part.mimetype);
-      }
-      return true; // Keep all non-file fields
-    },
-    uploadDir: '/tmp', // Netlify Functions can only write to /tmp
-    keepExtensions: true,
-  });
-  
   return new Promise((resolve, reject) => {
-    // Create a stream from the event body
-    const bodyStream = new require('stream').Readable();
-    
-    // Handle base64 encoded bodies (common in serverless functions)
-    const body = event.isBase64Encoded 
-      ? Buffer.from(event.body, 'base64') 
-      : event.body;
+    try {
+      // Get the content type and boundary
+      const contentType = event.headers['content-type'] || event.headers['Content-Type'];
       
-    bodyStream.push(body);
-    bodyStream.push(null); // Signal end of stream
-    
-    // Parse the stream
-    form.parse(bodyStream, (err, fields, files) => {
-      if (err) {
-        return reject(err);
+      if (!contentType || !contentType.includes('multipart/form-data')) {
+        return reject(new Error('Not a multipart form data submission'));
       }
       
-      // Combine fields and files into a single object
-      const result = { ...fields };
-      
-      // Add file information if it exists
-      if (files.logo) {
-        result.logo = files.logo;
+      // Get the boundary from the content type
+      const boundaryMatch = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
+      if (!boundaryMatch) {
+        return reject(new Error('No boundary found in content type'));
       }
       
-      resolve(result);
-    });
+      const boundary = boundaryMatch[1] || boundaryMatch[2];
+      
+      // Get the body (handle base64 encoding if necessary)
+      const body = event.isBase64Encoded
+        ? Buffer.from(event.body, 'base64').toString('utf8')
+        : event.body;
+      
+      if (!body) {
+        return reject(new Error('Request body is empty or malformed'));
+      }
+      
+      // Split the body by boundary
+      const boundaryString = `--${boundary}`;
+      const parts = body.split(boundaryString).filter(part => 
+        part.trim() !== '' && part.trim() !== '--'
+      );
+      
+      // Process each part
+      const formData = {};
+      let logoData = null;
+      
+      for (const part of parts) {
+        // Get the headers of the part
+        const [headerSection, ...contentSections] = part.split('\r\n\r\n');
+        const content = contentSections.join('\r\n\r\n').trim();
+        
+        // Check if this is a file input or a normal field
+        const nameMatch = headerSection.match(/name="([^"]+)"/);
+        const filenameMatch = headerSection.match(/filename="([^"]+)"/);
+        
+        if (!nameMatch) continue; // Skip if no name found
+        
+        const name = nameMatch[1];
+        
+        if (filenameMatch) {
+          // This is a file input
+          const filename = filenameMatch[1];
+          
+          if (name === 'logo' && filename) {
+            // Check MIME type (simple check based on file extension)
+            const ext = path.extname(filename).toLowerCase();
+            const allowedExts = ['.png', '.svg', '.webp', '.avif'];
+            
+            if (allowedExts.includes(ext)) {
+              // Create a temp file
+              const tempPath = `/tmp/${Date.now()}-${filename}`;
+              
+              // The content includes the trailing \r\n so we need to remove it
+              const fileContent = content.replace(/\r\n$/, '');
+              
+              // Write the file
+              fs.writeFileSync(tempPath, fileContent);
+              
+              // Store file info
+              logoData = {
+                originalFilename: filename,
+                filepath: tempPath,
+                // Simplified mimetype detection
+                mimetype: ext === '.png' ? 'image/png' : 
+                          ext === '.svg' ? 'image/svg+xml' : 
+                          ext === '.webp' ? 'image/webp' : 'image/avif'
+              };
+            }
+          }
+        } else {
+          // This is a regular field
+          formData[name] = content;
+        }
+      }
+      
+      // Add logo if it exists
+      if (logoData) {
+        formData.logo = logoData;
+      }
+      
+      resolve(formData);
+    } catch (error) {
+      console.error('Error parsing multipart form:', error);
+      reject(error);
+    }
   });
 }
