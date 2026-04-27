@@ -1,5 +1,7 @@
 # MakerBench
 
+> **Note:** This has been replaced by https://github.com/schalkneethling/makerbench-next - same idea, much easier to submit new tools.
+
 All your tools are in one place.
 
 [![Netlify Status](https://api.netlify.com/api/v1/badges/66abf144-27c1-4a85-9f7d-8621c6761f67/deploy-status)](https://app.netlify.com/sites/makerbench/deploys)
