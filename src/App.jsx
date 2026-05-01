@@ -7,6 +7,8 @@ import { Footer } from "./ui/molecules/footer";
 import { Logo } from "./ui/atoms/logo";
 import { Search } from "./ui/molecules/search";
 import { SearchResults } from "./ui/molecules/search-results";
+import { SuggestToolButton } from "./ui/molecules/suggest-tool-button";
+import { SuggestToolDialog } from "./ui/molecules/suggest-tool";
 
 import "./App.css";
 
@@ -16,6 +18,7 @@ function DeveloperToolchest() {
   const [searchString, setSearchString] = React.useState("");
   const [tools, setTools] = React.useState(null);
   const [toolsIndex, setToolsIndex] = React.useState(null);
+  const [isSuggestDialogOpen, setIsSuggestDialogOpen] = React.useState(false);
 
   function doSearch(query, event) {
     event && event.preventDefault();
@@ -35,6 +38,14 @@ function DeveloperToolchest() {
 
   function handleChange(event) {
     setSearchString(event.target.value.toLowerCase());
+  }
+
+  function handleOpenSuggestDialog() {
+    setIsSuggestDialogOpen(true);
+  }
+
+  function handleCloseSuggestDialog() {
+    setIsSuggestDialogOpen(false);
   }
 
   React.useEffect(() => {
@@ -95,7 +106,10 @@ function DeveloperToolchest() {
   return (
     <div className="page-container">
       <div className="app-container">
-        <Logo />
+        <div className="header-container">
+          <Logo />
+          <SuggestToolButton onClick={handleOpenSuggestDialog} />
+        </div>
         <Search
           handleChange={handleChange}
           onSubmitCallback={doSearch}
@@ -123,6 +137,12 @@ function DeveloperToolchest() {
         <FeaturedArticles />
       </div>
       <Footer />
+
+      {/* Dialog for suggesting a tool */}
+      <SuggestToolDialog
+        isOpen={isSuggestDialogOpen}
+        onClose={handleCloseSuggestDialog}
+      />
     </div>
   );
 }

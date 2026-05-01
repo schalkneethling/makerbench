@@ -1,3 +1,5 @@
+import PropTypes from "prop-types";
+
 export const Suggestions = ({ tools }) => {
   const suggestionsSet = new Set();
   let allTags = [];
@@ -13,4 +15,12 @@ export const Suggestions = ({ tools }) => {
       })}
     </datalist>
   );
+};
+
+Suggestions.propTypes = {
+  tools: PropTypes.arrayOf(
+    PropTypes.shape({
+      tag: PropTypes.array.isRequired
+    })
+  ).isRequired
 };

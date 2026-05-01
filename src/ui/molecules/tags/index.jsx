@@ -1,4 +1,5 @@
 import "./index.css";
+import PropTypes from "prop-types";
 
 export const Tags = ({ tags, onSubmitCallback }) => {
   return (
@@ -12,4 +13,9 @@ export const Tags = ({ tags, onSubmitCallback }) => {
       ))}
     </ul>
   );
+};
+
+Tags.propTypes = {
+  tags: PropTypes.arrayOf(PropTypes.string).isRequired,
+  onSubmitCallback: PropTypes.func.isRequired
 };

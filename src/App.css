@@ -66,6 +66,14 @@ a:visited {
   width: 100%;
 }
 
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 1rem 0;
+}
+
 .visually-hidden {
   border: 0;
   clip: rect(0 0 0 0);
